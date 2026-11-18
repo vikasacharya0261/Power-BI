@@ -1,0 +1,2 @@
+[console_scripts]
+sales-bi = bi_dashboard.cli:main

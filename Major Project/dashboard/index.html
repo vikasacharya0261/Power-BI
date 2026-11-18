@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales BI Platform — Live Dashboard</title>
+  <meta name="description" content="India-focused sales dashboard with INR reporting, state-level analysis, GST estimates, channel performance, and automated alerts." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ──────────── TOAST CONTAINER ──────────── -->
+<div id="toast-container" aria-live="polite"></div>
+
+<!-- ──────────── LIVE ORDER TICKER ──────────── -->
+<div class="ticker-bar" id="ticker-bar">
+  <span class="ticker-label">
+    <span class="ticker-pulse"></span>
+    LATEST SAMPLE ORDERS
+  </span>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="ticker-inner">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+  <!-- ───────────────── SIDEBAR ───────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <span class="brand-name">Sales BI</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" id="nav-overview" onclick="showSection('overview', this); return false;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Overview
+      </a>
+      <a href="#" class="nav-item" id="nav-sales" onclick="showSection('sales', this); return false;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>
+        Sales trends
+      </a>
+      <a href="#" class="nav-item" id="nav-products" onclick="showSection('products', this); return false;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+        Products
+      </a>
+      <a href="#" class="nav-item" id="nav-transactions" onclick="showSection('transactions', this); return false;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Orders
+      </a>
+      <a href="#" class="nav-item" id="nav-alerts" onclick="showSection('alerts', this); return false;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        Needs attention
+        <span class="nav-badge" id="alert-badge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <!-- Connection status -->
+      <div class="conn-status" id="conn-status">
+        <span class="conn-dot disconnected" id="conn-dot"></span>
+        <span id="conn-text">Connecting…</span>
+      </div>
+      <div class="pipeline-meta">
+        <span id="pipeline-rows">— rows</span> ·
+        <span id="pipeline-alerts">— alerts</span>
+      </div>
+      <div class="last-run">Updated: <strong id="pipeline-time">—</strong></div>
+    </div>
+  </aside>
+
+  <!-- ───────────────── MAIN ───────────────── -->
+  <main class="main-content">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="page-title" id="pageTitle">Sales overview</div>
+
+        <!-- Live indicator -->
+        <div class="live-badge">
+          <span class="live-dot"></span>
+          LIVE
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Clock -->
+        <div class="clock-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span id="live-clock">--:--:--</span>
+        </div>
+
+        <!-- Refresh indicator + last updated -->
+        <div class="refresh-status" id="refresh-indicator">
+          <svg class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        </div>
+        <div class="last-refreshed-badge">
+          Updated <span id="last-refreshed">—</span>
+        </div>
+
+        <!-- Action buttons -->
+        <button class="action-btn" id="refresh-btn" onclick="manualRefresh()" title="Refresh now">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          Refresh
+        </button>
+        <button class="action-btn action-btn--accent" onclick="manualSimulate()" title="Add a sample order to the live feed">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add sample order
+        </button>
+
+        <div class="avatar" title="Management User">MU</div>
+      </div>
+    </header>
+
+    <!-- ═══════════ SECTION: OVERVIEW ═══════════ -->
+    <section class="section active" id="section-overview">
+      <div class="section-header-row overview-intro">
+        <div>
+          <h2 class="section-heading">Your sales, at a glance</h2>
+          <p class="chart-subtitle">This demo adds sample orders automatically. Here’s the latest picture.</p>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent: #7c6df9;">
+          <div class="kpi-icon" style="background: rgba(124,109,249,0.15);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c6df9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Sales (excl. GST)</span>
+            <span class="kpi-value" id="kpi-revenue" data-current="0">₹0</span>
+            <span class="kpi-sub" id="kpi-sub-revenue">Average order: —</span>
+            <span class="kpi-sub" id="kpi-sub-gst">GST estimate: —</span>
+          </div>
+          <div class="kpi-pulse" style="--pc:#7c6df9;"></div>
+        </div>
+
+        <div class="kpi-card" style="--accent: #22d3a4;">
+          <div class="kpi-icon" style="background: rgba(34,211,164,0.15);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Gross profit</span>
+            <span class="kpi-value" id="kpi-profit" data-current="0">₹0</span>
+            <span class="kpi-sub" id="kpi-sub-profit">— margin after costs</span>
+          </div>
+          <div class="kpi-pulse" style="--pc:#22d3a4;"></div>
+        </div>
+
+        <div class="kpi-card" style="--accent: #f97316;">
+          <div class="kpi-icon" style="background: rgba(249,115,22,0.15);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Orders</span>
+            <span class="kpi-value" id="kpi-orders" data-current="0">0</span>
+            <span class="kpi-sub" id="kpi-sub-orders">From — customers</span>
+          </div>
+          <div class="kpi-pulse" style="--pc:#f97316;"></div>
+        </div>
+
+        <div class="kpi-card" style="--accent: #e879f9;">
+          <div class="kpi-icon" style="background: rgba(232,121,249,0.15);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e879f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Items sold</span>
+            <span class="kpi-value" id="kpi-units" data-current="0">0</span>
+            <span class="kpi-sub" id="kpi-sub-categories">Across — product categories</span>
+          </div>
+          <div class="kpi-pulse" style="--pc:#e879f9;"></div>
+        </div>
+      </div>
+
+      <!-- Charts row 1 -->
+      <div class="charts-row">
+        <div class="chart-card chart-wide">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales over time</h3>
+              <p class="chart-subtitle">A day-by-day look at revenue and profit.</p>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-dot" style="background:#7c6df9;"></span>Revenue
+              <span class="legend-dot" style="background:#22d3a4; margin-left:12px;"></span>Profit
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="dailyChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Where sales come from</h3>
+              <p class="chart-subtitle">Revenue split by sales channel.</p>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--donut">
+            <canvas id="channelChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts row 2 -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales by state</h3>
+              <p class="chart-subtitle">See where orders are coming from.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="regionChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card chart-wide">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Profit margin by state</h3>
+              <p class="chart-subtitle">What each state keeps after costs.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="marginChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══════════ SECTION: SALES ANALYSIS ═══════════ -->
+    <section class="section" id="section-sales">
+      <div class="section-header-row">
+        <h2 class="section-heading">Sales trends</h2>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card chart-full">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales each day</h3>
+              <p class="chart-subtitle">Revenue and items sold, day by day.</p>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--tall">
+            <canvas id="salesBreakdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales and costs</h3>
+              <p class="chart-subtitle">Compare sales and costs across states.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="costRevenueChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Items sold by channel</h3>
+              <p class="chart-subtitle">A simple look at channel mix.</p>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--donut">
+            <canvas id="channelUnitsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- State table (dynamically updated) -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="chart-title">A closer look by state</h3>
+          <span class="live-tag">Live</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="regionTable">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>Orders</th>
+                <th>Items</th>
+                <th>Sales (excl. GST)</th>
+                <th>GST estimate</th>
+                <th>Total (incl. GST)</th>
+                <th>Cost</th>
+                <th>Gross Profit</th>
+                <th>Margin %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="9" class="loading-row">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SECTION: PRODUCTS ═══════════ -->
+    <section class="section" id="section-products">
+      <div class="section-header-row">
+        <h2 class="section-heading">Product performance</h2>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card chart-wide">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales by product</h3>
+              <p class="chart-subtitle">Revenue and items sold.</p>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="productChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Sales by category</h3>
+              <p class="chart-subtitle">Where the revenue comes from.</p>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--donut">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product cards -->
+      <div class="product-grid">
+        <div class="product-card">
+          <div class="product-icon hardware">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </div>
+          <div class="product-info">
+            <h4>Analytics Gateway</h4>
+            <span class="product-id">P-100 · Hardware</span>
+          </div>
+          <div class="product-metrics">
+            <div class="pm-item"><span class="pm-label">Sales (excl. GST)</span><span class="pm-val" id="p100-rev">—</span></div>
+            <div class="pm-item"><span class="pm-label">Units</span><span class="pm-val" id="p100-units">—</span></div>
+            <div class="pm-item"><span class="pm-label">Margin</span><span class="pm-val margin-ok" id="p100-margin">—</span></div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-icon software">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          </div>
+          <div class="product-info">
+            <h4>BI Starter License</h4>
+            <span class="product-id">P-200 · Software</span>
+          </div>
+          <div class="product-metrics">
+            <div class="pm-item"><span class="pm-label">Sales (excl. GST)</span><span class="pm-val" id="p200-rev">—</span></div>
+            <div class="pm-item"><span class="pm-label">Units</span><span class="pm-val" id="p200-units">—</span></div>
+            <div class="pm-item"><span class="pm-label">Margin</span><span class="pm-val margin-great" id="p200-margin">—</span></div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-icon services">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
+          <div class="product-info">
+            <h4>Implementation Pack</h4>
+            <span class="product-id">P-300 · Services</span>
+          </div>
+          <div class="product-metrics">
+            <div class="pm-item"><span class="pm-label">Sales (excl. GST)</span><span class="pm-val" id="p300-rev">—</span></div>
+            <div class="pm-item"><span class="pm-label">Units</span><span class="pm-val" id="p300-units">—</span></div>
+            <div class="pm-item"><span class="pm-label">Margin</span><span class="pm-val margin-ok" id="p300-margin">—</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SECTION: TRANSACTIONS ═══════════ -->
+    <section class="section" id="section-transactions">
+      <div class="section-header-row">
+        <h2 class="section-heading">Recent orders</h2>
+        <div class="filter-bar">
+          <input type="text" id="txSearch" class="filter-input" placeholder="Search orders, products, or customers…" oninput="filterTable()" />
+          <select id="txState" class="filter-select" onchange="filterTable()">
+            <option value="">All states</option>
+          </select>
+          <select id="txChannel" class="filter-select" onchange="filterTable()">
+            <option value="">All channels</option>
+            <option value="Direct">Direct</option>
+            <option value="Distributor">Distributor</option>
+            <option value="Online">Online</option>
+            <option value="Retail">Retail</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-wrap">
+          <table class="data-table" id="txTable">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>State</th>
+                <th>Channel</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Items</th>
+                <th>Unit price (excl. GST)</th>
+                <th>Sales (excl. GST)</th>
+                <th>GST rate</th>
+                <th>GST estimate</th>
+                <th>Total (incl. GST)</th>
+                <th>Gross Profit</th>
+                <th>Margin %</th>
+              </tr>
+            </thead>
+            <tbody id="txBody">
+              <tr><td colspan="14" class="loading-row">Bringing in the latest orders…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="txCount">—</span>
+          <span class="live-tag">Updates every 5 seconds</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ SECTION: ALERTS ═══════════ -->
+    <section class="section" id="section-alerts">
+      <div class="section-header-row">
+        <h2 class="section-heading">Needs attention</h2>
+        <span class="live-tag">Checked automatically</span>
+      </div>
+
+      <!-- Live-rendered alert cards -->
+      <div class="alerts-grid" id="alerts-live-grid">
+        <div class="alert-card alert-info">
+          <div class="alert-body">
+            <p class="alert-message">Checking if anything needs your attention…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threshold config card -->
+      <div class="config-card">
+        <h3 class="chart-title">Alert Thresholds</h3>
+        <p class="chart-subtitle" style="margin-bottom:20px;">These targets flag results worth a closer look. You can change them in your <code class="code-inline">.env</code> file. Sample prices and the 18% GST rate are illustrative; confirm the correct HSN/SAC rate before using these figures for tax reporting.</p>
+        <div class="config-grid">
+          <div class="config-item">
+            <label class="config-label">Minimum Margin %</label>
+            <div class="config-val-row">
+              <div class="threshold-bar">
+                <div class="threshold-fill" id="config-margin-fill" style="width:20%"></div>
+                <div class="threshold-current" id="config-margin-current" style="left:50.47%"></div>
+              </div>
+              <span class="config-val" id="config-margin-value">20%</span>
+            </div>
+            <span class="config-note" id="config-margin-note">We’ll flag margins below 20%.</span>
+          </div>
+          <div class="config-item">
+            <label class="config-label">Minimum daily sales (excl. GST)</label>
+            <div class="config-val-row">
+              <div class="threshold-bar">
+                <div class="threshold-fill danger" id="config-daily-sales-fill" style="width:0%"></div>
+                <div class="threshold-current danger" id="config-daily-sales-current" style="left:0%"></div>
+              </div>
+              <span class="config-val" id="config-daily-sales-value">₹1,00,000</span>
+            </div>
+            <span class="config-note danger-note" id="config-daily-sales-note">We’ll flag days below ₹1,00,000.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

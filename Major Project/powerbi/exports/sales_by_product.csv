@@ -1,0 +1,4 @@
+product_id,product_name,category,orders,units,revenue,gst_collected,total_with_gst,cost,gross_profit,gross_margin_pct
+P-100,Analytics Gateway,Hardware,283,849,33959151,6112647.18,40071798.18,20376000,13583151,40.0
+P-200,BI Starter License,Software,264,793,7929207,1427257.26,9356464.26,2379000,5550207,70.0
+P-300,Implementation Pack,Services,276,801,60074199,10813355.82,70887554.82000001,36045000,24029199,40.0

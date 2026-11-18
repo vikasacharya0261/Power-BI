@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sales-bi-platform"
+version = "0.1.0"
+description = "Automated sales business intelligence pipeline for Power BI"
+requires-python = ">=3.11"
+dependencies = [
+    "apscheduler>=3.10,<4",
+    "pandas>=2.2,<3",
+    "pydantic-settings>=2.6,<3",
+    "pyodbc>=5,<6",
+    "python-dotenv>=1.0,<2",
+    "requests>=2.32,<3",
+    "sqlalchemy>=2.0,<3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9"]
+
+[project.scripts]
+sales-bi = "bi_dashboard.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

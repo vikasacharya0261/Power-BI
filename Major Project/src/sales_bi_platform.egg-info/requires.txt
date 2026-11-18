@@ -1,0 +1,10 @@
+apscheduler<4,>=3.10
+pandas<3,>=2.2
+pydantic-settings<3,>=2.6
+pyodbc<6,>=5
+python-dotenv<2,>=1.0
+requests<3,>=2.32
+sqlalchemy<3,>=2.0
+
+[test]
+pytest<9,>=8

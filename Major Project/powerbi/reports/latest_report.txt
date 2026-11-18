@@ -1,0 +1,7 @@
+Sales BI management report
+Sales (excl. GST): ₹97,64,750.00
+GST estimate: ₹17,57,655.00
+Total (incl. GST): ₹1,15,22,405.00
+Gross profit: ₹41,84,750.00
+Gross margin: 42.86%
+Orders: 88

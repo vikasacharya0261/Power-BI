@@ -1,0 +1,2 @@
+orders,customers,units,revenue,gst_collected,total_with_gst,cost,gross_profit,gross_margin_pct,average_order_value,last_order_date
+823,539,2443,101962557,18353260.26,120315817.26,58800000,43162557,42.33,123891.32,2026-11-17
